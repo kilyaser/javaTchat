@@ -54,6 +54,10 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         btnSend.addActionListener(this);
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
+        btnDisconnect.addActionListener(this);
+        btnDisconnect.setVisible(false);
+        btnSend.setVisible(false);
+        tfMessage.setVisible(false);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -91,6 +95,17 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
             sendMessage();
         } else if (src == btnLogin) {
             connect();
+            btnDisconnect.setVisible(true);
+            btnSend.setVisible(true);
+            tfMessage.setVisible(true);
+        } else if(src == btnDisconnect){
+            btnLogin.setVisible(false);
+            tfIPAddress.setVisible(false);
+            cbAlwaysOnTop.setVisible(false);
+            tfPort.setVisible(false);
+            tfLogin.setVisible(false);
+            tfPassword.setVisible(false);
+
         } else {
             throw new RuntimeException("Action for component unimplemented");
         }
