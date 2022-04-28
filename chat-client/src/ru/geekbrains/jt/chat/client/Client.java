@@ -21,6 +21,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
     private final JTextField tfIPAddress = new JTextField("127.0.0.1");
     private final JTextField tfPort = new JTextField("8189");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top");
+    private final JCheckBox sendMsgAllUsers = new JCheckBox("Send to All");
     private final JTextField tfLogin = new JTextField("ivan_igorevich");
     private final JPasswordField tfPassword = new JPasswordField("123456");
     private final JButton btnLogin = new JButton("Login");
@@ -55,9 +56,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
         btnDisconnect.addActionListener(this);
-        btnDisconnect.setVisible(false);
-        btnSend.setVisible(false);
-        tfMessage.setVisible(false);
+
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -65,9 +64,11 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         panelTop.add(tfLogin);
         panelTop.add(tfPassword);
         panelTop.add(btnLogin);
+        //panelBottom.add(sendMsgAllUsers);
         panelBottom.add(btnDisconnect, BorderLayout.WEST);
         panelBottom.add(tfMessage, BorderLayout.CENTER);
         panelBottom.add(btnSend, BorderLayout.EAST);
+        panelBottom.setVisible(false);
 
         add(panelBottom, BorderLayout.SOUTH);
         add(panelTop, BorderLayout.NORTH);
@@ -95,16 +96,10 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
             sendMessage();
         } else if (src == btnLogin) {
             connect();
-            btnDisconnect.setVisible(true);
-            btnSend.setVisible(true);
-            tfMessage.setVisible(true);
+            panelBottom.setVisible(true);
         } else if(src == btnDisconnect){
-            btnLogin.setVisible(false);
-            tfIPAddress.setVisible(false);
-            cbAlwaysOnTop.setVisible(false);
-            tfPort.setVisible(false);
-            tfLogin.setVisible(false);
-            tfPassword.setVisible(false);
+            panelTop.setVisible(false);
+
 
         } else {
             throw new RuntimeException("Action for component unimplemented");
