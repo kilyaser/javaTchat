@@ -41,12 +41,6 @@ public class SocketThread extends Thread {
     }
 
     public synchronized boolean sendMessage(String msg) {
-        String[] formatedMsg = msg.split("§");
-        if(formatedMsg[0].equals("/auth_accept"))
-            msg = formatedMsg[1] + " авторизован.";
-        if(formatedMsg[0].equals("/bcast"))
-            msg = "Соединение с сервером установлено.";
-
         try {
             out.writeUTF(msg);
             out.flush();
