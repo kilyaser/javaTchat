@@ -8,6 +8,7 @@ import ru.geekbrains.jt.network.SocketThreadListener;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
@@ -152,6 +153,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         }
         String login = arr[1];
         String password = arr[2];
+        if (arr[0].equals(Messages.REGISTRATION)){
+            try {
+                SqlClient.regNewUser(login, password, login);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
         String nickname = SqlClient.getNick(login, password);
         if (nickname == null) {
             putLog("Invalid login attempt " + login);
