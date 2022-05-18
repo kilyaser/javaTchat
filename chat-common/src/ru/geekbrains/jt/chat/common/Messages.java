@@ -1,5 +1,7 @@
 package ru.geekbrains.jt.chat.common;
 
+import java.util.SplittableRandom;
+
 public class Messages {
     public static final String DELIMITER = "§";
     public static final String AUTH_REQUEST = "/auth_request";
@@ -9,6 +11,7 @@ public class Messages {
     public static final String MSG_FORMAT_ERROR = "/msg_error";
     public static final String USER_LIST = "/user_list";
     public static final String USER_BROADCAST = "/user_bcast";
+    public static final String REGISTRATION = "/new_user";
 
     public static String getTypeBcastFromClient(String msg) {
         return USER_BROADCAST + DELIMITER + msg;
@@ -37,5 +40,8 @@ public class Messages {
     public static String getTypeBroadcast(String src, String message) {
         return MSG_BROADCAST + DELIMITER + System.currentTimeMillis() +
                 DELIMITER + src + DELIMITER + message;
+    }
+    public static String getRegistration(String login, String pass, String nickname){
+        return REGISTRATION + DELIMITER + login + DELIMITER + pass + DELIMITER + nickname;
     }
 }

@@ -172,7 +172,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
 
     @Override
     public void onSocketStop(SocketThread t) {
-        panelBottom.setVisible(false);
+        panelBottom.setVisible(true);
         panelTop.setVisible(true);
         setTitle(TITLE);
         userList.setListData(new String[0]);
