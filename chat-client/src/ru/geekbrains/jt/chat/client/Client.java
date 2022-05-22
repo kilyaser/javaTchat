@@ -1,18 +1,21 @@
 package ru.geekbrains.jt.chat.client;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import ru.geekbrains.jt.chat.common.Messages;
 import ru.geekbrains.jt.network.SocketThread;
 import ru.geekbrains.jt.network.SocketThreadListener;
 
+import javax.annotation.processing.Filer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Client extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
@@ -38,6 +41,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
 
     private boolean shownIoErrors = false;
     private SocketThread socketThread;
+    public static File fileLog; // = new File("chat-client/history_[login].txt");
 
 
     private Client() {
@@ -105,9 +109,11 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         try {
             Socket socket = new Socket(tfIPAddress.getText(), Integer.parseInt(tfPort.getText()));
             socketThread = new SocketThread(this, "Client", socket);
+
         } catch (IOException e) {
             showException(Thread.currentThread(), e);
         }
+
     }
     private void sendMessage() {
         String msg = tfMessage.getText();
@@ -118,20 +124,44 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         socketThread.sendMessage(Messages.getTypeBcastFromClient(msg));
 //        tfMessage.requestFocusInWindow();
 //        putLog(String.format("%s: %s", username, msg));
-        //wrtMsgToLogFile(msg, username);
+        wrtMsgToLogFile(msg, username);
 
     }
 //codewars, hackerrank, leetcode, codegame
 
     private void wrtMsgToLogFile(String msg, String username) {
-        try (FileWriter out = new FileWriter("log.txt", true)) {
-            out.write(username + ": " + msg + "\n");
-            out.flush();
-        } catch (IOException e) {
-            if (!shownIoErrors) {
-                shownIoErrors = true;
-                showException(Thread.currentThread(), e);
+        if(!(fileLog = new File("chat-client/history_" + username + ".txt")).exists()){
+            fileLog = new File("chat-client/history_" + username + ".txt");
+
+        }
+        try (FileWriter out = new FileWriter(fileLog, true)) {
+                msg = DATE_FORMAT.format(System.currentTimeMillis()) + username + ": " + msg + "\n";
+                out.write(msg);
+                out.flush();
+            } catch (IOException e) {
+
             }
+
+    }
+    // попытка вывести 100 последниних сообщений.
+    private void convertFilelog(File fileLog){
+        ArrayList<String> list = new ArrayList<>();
+        System.out.println(fileLog.exists());
+        try(BufferedReader reader = new BufferedReader(new FileReader(fileLog))){
+            while (reader.ready()){
+                list.add(reader.readLine());
+            }
+            int count = list.size() - 1;
+            int limit = 0;
+            for (int i = count; i >=0; i--) {
+                putLog(list.get(count));
+                if(limit > 100){
+                    return;
+                }
+                limit++;
+            }
+        } catch (IOException e){
+            e.printStackTrace();
         }
     }
 
