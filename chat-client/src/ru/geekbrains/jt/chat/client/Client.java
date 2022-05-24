@@ -139,7 +139,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
                 out.write(msg);
                 out.flush();
             } catch (IOException e) {
-
+                    e.printStackTrace();
             }
 
     }
