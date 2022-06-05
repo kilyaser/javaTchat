@@ -1,21 +1,26 @@
 package ru.geekbrains.jt.chat.server.gui;
 
 import ru.geekbrains.jt.chat.server.core.ChatServer;
+import ru.geekbrains.jt.chat.server.core.ChatServerListener;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class ServerGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
-    private static final int POS_X = 100;
-    private static final int POS_Y = 100;
-    private static final int WIDTH = 200;
-    private static final int HEIGHT = 100;
+public class ServerGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, ChatServerListener {
+    private static final int POS_X = 800;
+    private static final int POS_Y = 200;
+    private static final int WIDTH = 600;
+    private static final int HEIGHT = 300;
 
-    private final ChatServer server = new ChatServer();
+    private final ChatServer server = new ChatServer(this);
     private final JButton btnStart = new JButton("Start");
     private final JButton btnStop = new JButton("Stop");
+    private final JPanel panelTop = new JPanel(new GridLayout(1, 2));
+    private final JTextArea log = new JTextArea();
 
     private ServerGUI() {
         Thread.setDefaultUncaughtExceptionHandler(this);
@@ -24,23 +29,21 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         setResizable(false);
         setTitle("Chat server");
         setAlwaysOnTop(true);
-        setLayout(new GridLayout(1, 2));
+        log.setEditable(false);
+        log.setLineWrap(true);
+        JScrollPane scrollLog = new JScrollPane(log);
         btnStart.addActionListener(this);
         btnStop.addActionListener(this);
-        add(btnStart);
-        add(btnStop);
+        panelTop.add(btnStart);
+        panelTop.add(btnStop);
+        add(panelTop, BorderLayout.NORTH);
+        add(scrollLog, BorderLayout.CENTER);
         setVisible(true);
     }
 
     public static void main(String[] args) {
-        System.out.println("main started");
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ServerGUI();
-            }
-        });
-        System.out.println("main ended");
+        Executors.newSingleThreadExecutor().execute(() -> new ServerGUI());
+        //SwingUtilities.invokeLater(() -> new ServerGUI());
     }
 
     @Override
@@ -58,11 +61,19 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         e.printStackTrace();
-        String msg = "Exception in thread " + t.getName() +
-                " " + e.getClass().getCanonicalName() +
-                ": " + e.getMessage() +
-                "\n\t" + e.getStackTrace()[0];
-        JOptionPane.showMessageDialog(null, msg,
-                "Exception", JOptionPane.ERROR_MESSAGE);
+//        String msg = "Exception in thread " + t.getName() +
+//                " " + e.getClass().getCanonicalName() +
+//                ": " + e.getMessage() +
+//                "\n\t" + e.getStackTrace()[0];
+//        JOptionPane.showMessageDialog(null, msg,
+//                "Exception", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void onChatServerMessage(String msg) {
+        SwingUtilities.invokeLater(() -> {
+            log.append(msg + "\n");
+            log.setCaretPosition(log.getDocument().getLength());
+        });
     }
 }

@@ -1,59 +1,66 @@
 package ru.geekbrains.jt.chat.client;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+import ru.geekbrains.jt.chat.common.Messages;
 import ru.geekbrains.jt.network.SocketThread;
 import ru.geekbrains.jt.network.SocketThreadListener;
 
+import javax.annotation.processing.Filer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Client extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
-    private static final int WIDTH = 400;
+    private static final int WIDTH = 600;
     private static final int HEIGHT = 300;
-
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
+    private static final String TITLE = "Chat Client";
     private final JTextArea log = new JTextArea();
 
     private final JPanel panelTop = new JPanel(new GridLayout(2, 3));
     private final JTextField tfIPAddress = new JTextField("127.0.0.1");
     private final JTextField tfPort = new JTextField("8189");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField tfLogin = new JTextField("ivan_igorevich");
-    private final JPasswordField tfPassword = new JPasswordField("123456");
+    private final JTextField tfLogin = new JTextField("ivan-igorevich");
+    private final JPasswordField tfPassword = new JPasswordField("123");
     private final JButton btnLogin = new JButton("Login");
 
     private final JPanel panelBottom = new JPanel(new BorderLayout());
     private final JButton btnDisconnect = new JButton("Disconnect");
     private final JTextField tfMessage = new JTextField();
-    private final JButton btnSend = new JButton("Send");
+    private final JButton btnSend = new JButton("<html><b>Send</b></html>");
     private final JList<String> userList = new JList<>();
 
     private boolean shownIoErrors = false;
     private SocketThread socketThread;
+    public static File fileLog; // = new File("chat-client/history_[login].txt");
+
 
     private Client() {
         Thread.setDefaultUncaughtExceptionHandler(this);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); //посреди экрана
         setSize(WIDTH, HEIGHT);
-        setTitle("Chat Client");
+        setTitle(TITLE);
         log.setEditable(false);
         log.setLineWrap(true);
         JScrollPane spLog = new JScrollPane(log);
         JScrollPane spUsers = new JScrollPane(userList);
-        String[] users = {"user1", "user2",
-                "user3", "user4", "user5", "user6",
-                "user7", "user8", "user9",
-                "user10_with_a_exceptionally_long_nickname", };
-        userList.setListData(users);
         spUsers.setPreferredSize(new Dimension(100, 0));
         cbAlwaysOnTop.addActionListener(this);
         btnSend.addActionListener(this);
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
+        btnDisconnect.addActionListener(this);
+        panelBottom.setVisible(false);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -91,6 +98,8 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
             sendMessage();
         } else if (src == btnLogin) {
             connect();
+        } else if (src == btnDisconnect) {
+            socketThread.close();
         } else {
             throw new RuntimeException("Action for component unimplemented");
         }
@@ -100,9 +109,11 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         try {
             Socket socket = new Socket(tfIPAddress.getText(), Integer.parseInt(tfPort.getText()));
             socketThread = new SocketThread(this, "Client", socket);
+
         } catch (IOException e) {
             showException(Thread.currentThread(), e);
         }
+
     }
     private void sendMessage() {
         String msg = tfMessage.getText();
@@ -110,22 +121,47 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         if ("".equals(msg)) return;
         tfMessage.setText(null);
         tfMessage.grabFocus();
-        socketThread.sendMessage(msg);
-//      tfMessage.requestFocusInWindow();
-//       putLog(String.format("%s: %s", username, msg));
-//       wrtMsgToLogFile(msg, username);
+        socketThread.sendMessage(Messages.getTypeBcastFromClient(msg));
+//        tfMessage.requestFocusInWindow();
+//        putLog(String.format("%s: %s", username, msg));
+        wrtMsgToLogFile(msg, username);
 
     }
+//codewars, hackerrank, leetcode, codegame
 
     private void wrtMsgToLogFile(String msg, String username) {
-        try (FileWriter out = new FileWriter("log.txt", true)) {
-            out.write(username + ": " + msg + "\n");
-            out.flush();
-        } catch (IOException e) {
-            if (!shownIoErrors) {
-                shownIoErrors = true;
-                showException(Thread.currentThread(), e);
+        if(!(fileLog = new File("chat-client/history_" + username + ".txt")).exists()){
+            fileLog = new File("chat-client/history_" + username + ".txt");
+
+        }
+        try (FileWriter out = new FileWriter(fileLog, true)) {
+                msg = DATE_FORMAT.format(System.currentTimeMillis()) + username + ": " + msg + "\n";
+                out.write(msg);
+                out.flush();
+            } catch (IOException e) {
+                    e.printStackTrace();
             }
+
+    }
+    // попытка вывести 100 последниних сообщений.
+    private void convertFilelog(File fileLog){
+        ArrayList<String> list = new ArrayList<>();
+        System.out.println(fileLog.exists());
+        try(BufferedReader reader = new BufferedReader(new FileReader(fileLog))){
+            while (reader.ready()){
+                list.add(reader.readLine());
+            }
+            int count = list.size() - 1;
+            int limit = 0;
+            for (int i = count; i >=0; i--) {
+                putLog(list.get(count));
+                if(limit > 100){
+                    return;
+                }
+                limit++;
+            }
+        } catch (IOException e){
+            e.printStackTrace();
         }
     }
 
@@ -156,7 +192,7 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         e.printStackTrace();
-        showException(t, e);
+        //showException(t, e);
     }
 
     @Override
@@ -166,17 +202,54 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
 
     @Override
     public void onSocketStop(SocketThread t) {
-        putLog("Stop");
+        panelBottom.setVisible(true);
+        panelTop.setVisible(true);
+        setTitle(TITLE);
+        userList.setListData(new String[0]);
     }
 
     @Override
     public void onSocketReady(SocketThread t, Socket socket) {
-        putLog("Ready");
+        panelBottom.setVisible(true);
+        panelTop.setVisible(false);
+        String login = tfLogin.getText();
+        String pass = new String(tfPassword.getPassword());
+        t.sendMessage(Messages.getAuthRequest(login, pass));
     }
 
     @Override
     public void onReceiveString(SocketThread t, Socket s, String msg) {
-        putLog(msg);
+        handleMessage(msg);
+    }
+
+    void handleMessage(String value) {
+        String[] arr = value.split(Messages.DELIMITER);
+        String msgType = arr[0];
+        switch (msgType) {
+            case Messages.AUTH_ACCEPT:
+                setTitle(TITLE + " logged in as: " + arr[1]);
+                break;
+            case Messages.AUTH_DENY:
+                putLog(value);
+                break;
+            case Messages.MSG_FORMAT_ERROR:
+                putLog(value);
+                socketThread.close();
+                break;
+            case Messages.USER_LIST:
+                String users = value.substring(Messages.DELIMITER.length() +
+                        Messages.USER_LIST.length());
+                String[] usersArr = users.split(Messages.DELIMITER);
+                Arrays.sort(usersArr);
+                userList.setListData(usersArr);
+                break;
+            case Messages.MSG_BROADCAST:
+                log.append(DATE_FORMAT.format(Long.parseLong(arr[1])) + ": " + arr[2] + ": " + arr[3] + "\n");
+                log.setCaretPosition(log.getDocument().getLength());
+                break;
+            default:
+                throw new RuntimeException("Unknown message type: " + msgType);
+        }
     }
 
     @Override
