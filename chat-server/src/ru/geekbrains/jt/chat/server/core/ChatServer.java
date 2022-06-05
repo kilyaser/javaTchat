@@ -1,5 +1,6 @@
 package ru.geekbrains.jt.chat.server.core;
 
+import org.apache.logging.log4j.LogManager;
 import ru.geekbrains.jt.chat.common.Messages;
 import ru.geekbrains.jt.network.ServerSocketThread;
 import ru.geekbrains.jt.network.ServerSocketThreadListener;
@@ -12,11 +13,14 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
+import org.apache.logging.log4j.Logger;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
     private final int SERVER_SOCKET_TIMEOUT = 2000;
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
     private Vector<SocketThread> clients = new Vector<>();
+    private static final Logger log = LogManager.getLogger();
+
 
     int counter = 0;
     ServerSocketThread server;
@@ -29,6 +33,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void start(int port) {
         if (server != null && server.isAlive()) {
             putLog("Server already started");
+            log.info("Server already started");
         } else {
             server = new ServerSocketThread(this, "Chat server " + counter++, port, SERVER_SOCKET_TIMEOUT);
         }
@@ -37,6 +42,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void stop() {
         if (server == null || !server.isAlive()) {
             putLog("Server is not running");
+            log.info("Server is not running");
         } else {
             server.interrupt();
         }
@@ -56,12 +62,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerStart(ServerSocketThread thread) {
         putLog("Server thread started");
+        log.info("Server thread started");
         SqlClient.connect();
     }
 
     @Override
     public void onServerStop(ServerSocketThread thread) {
         putLog("Server thread stopped");
+        log.info("Server thread stopped");
         SqlClient.disconnect();
         for (int i = 0; i < clients.size(); i++) {
             clients.get(i).close();
@@ -81,6 +89,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onSocketAccepted(ServerSocketThread t, ServerSocket s, Socket client) {
         putLog("client connected");
+        log.info("client connected");
         String name = "SocketThread" + client.getInetAddress() + ": " + client.getPort();
         new ClientThread(this, name, client);
     }
@@ -97,6 +106,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onSocketStart(SocketThread t, Socket s) {
         putLog("Client connected");
+        log.info("Client connected");
     }
 
     @Override
@@ -112,6 +122,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onSocketReady(SocketThread t, Socket socket) {
         putLog("client is ready");
+        log.info("client is ready");
         clients.add(t);
     }
 
@@ -164,6 +175,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String nickname = SqlClient.getNick(login, password);
         if (nickname == null) {
             putLog("Invalid login attempt " + login);
+            log.info("Invalid login attempt " + login);
             client.authFail();
             return;
         } else {
